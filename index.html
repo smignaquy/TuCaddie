@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>TuCaddie — Tu pase al golf</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --green:#1a5c3a;--green2:#2d7a52;--green3:#e8f5ee;--green4:#b8ddc8;
+    --gold:#c9a84c;--gold2:#f0d080;--gold3:#fdf6e3;--dark:#0f1f15;--mid:#2a3d2f;
+    --bg:#f5f8f5;--card:#ffffff;--text:#1a2e1f;--muted:#6b8070;
+    --border:#ddeee4;--accent:#e8f5ee;--red:#c0392b;--red-bg:#fdf0ee;
+  }
+  html,body{height:100%}
+  body{font-family:'DM Sans',sans-serif;background:#e8ece8;color:var(--text);display:flex;justify-content:center;align-items:center;min-height:100vh}
+  .phone{width:390px;height:844px;max-height:100vh;background:var(--bg);position:relative;overflow:hidden;display:flex;flex-direction:column;border-radius:0;box-shadow:0 10px 60px rgba(15,31,21,.25)}
+  @media(min-width:420px){.phone{border-radius:40px;height:844px}}
+
+  /* STATUS BAR */
+  .status{height:44px;background:var(--green);display:flex;align-items:center;justify-content:space-between;padding:0 24px;flex-shrink:0;z-index:50}
+  .status span{color:white;font-size:12px;font-weight:600}
+
+  /* SCREENS */
+  .screen{display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0}
+  .screen.active{display:flex}
+  .scroll-content{flex:1;overflow-y:auto;padding-bottom:90px;min-height:0}
+  .scroll-content::-webkit-scrollbar{display:none}
+
+  /* HEADERS */
+  .g-header{background:linear-gradient(135deg,var(--green) 0%,var(--green2) 100%);padding:20px 16px 24px;position:relative;overflow:hidden;flex-shrink:0}
+  .g-header::after{content:'';position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.06);pointer-events:none}
+  .screen-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:white;margin-bottom:4px;position:relative;z-index:1}
+  .screen-sub{color:rgba(255,255,255,0.7);font-size:13px;position:relative;z-index:1}
+  .back-btn{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,0.85);font-size:14px;cursor:pointer;margin-bottom:12px;position:relative;z-index:2;padding:4px 0;font-weight:500}
+  .back-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* NAV BAR */
+  .navbar{height:74px;background:var(--card);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-around;flex-shrink:0;position:absolute;bottom:0;left:0;right:0;z-index:100;padding-bottom:6px}
+  .nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:8px 10px;border-radius:12px;transition:all .2s;min-width:58px;position:relative}
+  .nav-item.active{background:var(--green3)}
+  .nav-icon svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block}
+  .nav-item.active .nav-icon svg{stroke:var(--green)}
+  .nav-label{font-size:10px;color:var(--muted);font-weight:500}
+  .nav-item.active .nav-label{color:var(--green);font-weight:600}
+  .nav-dot{position:absolute;top:6px;right:12px;width:8px;height:8px;border-radius:50%;background:var(--gold);border:1.5px solid var(--card)}
+
+  /* ===== ONBOARDING ===== */
+  #screen-onboarding{background:linear-gradient(160deg,var(--green) 0%,#11402a 70%,var(--dark) 100%);justify-content:space-between}
+  .ob-skip{text-align:right;padding:18px 22px 0;color:rgba(255,255,255,.6);font-size:13px;cursor:pointer;font-weight:500}
+  .ob-slide{display:none;flex-direction:column;align-items:center;text-align:center;padding:0 32px;flex:1;justify-content:center}
+  .ob-slide.active{display:flex}
+  .ob-logo-mark{width:108px;height:108px;border-radius:28px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;margin-bottom:26px}
+  .ob-icon{width:96px;height:96px;border-radius:26px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;margin-bottom:26px}
+  .ob-icon svg{width:46px;height:46px;stroke:var(--gold2);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .ob-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:white;margin-bottom:12px;line-height:1.25}
+  .ob-title em{color:var(--gold2);font-style:normal}
+  .ob-text{color:rgba(255,255,255,.65);font-size:14.5px;line-height:1.65;max-width:300px}
+  .ob-bottom{padding:0 32px 44px}
+  .ob-dots{display:flex;gap:7px;justify-content:center;margin-bottom:22px}
+  .ob-dot{width:7px;height:7px;border-radius:4px;background:rgba(255,255,255,.25);transition:all .25s}
+  .ob-dot.active{background:var(--gold2);width:22px}
+  .ob-btn{width:100%;background:var(--gold);color:var(--dark);border:none;border-radius:16px;padding:16px;font-size:16px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer}
+  .ob-tagline{font-family:'Syne',sans-serif;color:var(--gold2);font-size:14px;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px;font-weight:600}
+
+  /* ===== HOME ===== */
+  .header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;position:relative;z-index:2}
+  .app-logo{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;color:white;letter-spacing:-.5px;display:flex;align-items:center;gap:8px}
+  .app-logo span{color:var(--gold2)}
+  .logo-flag{width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+  .logo-flag svg{width:15px;height:15px}
+  .header-actions{display:flex;gap:10px;align-items:center}
+  .bell-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative}
+  .bell-btn svg{width:18px;height:18px;stroke:white;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .bell-badge{position:absolute;top:7px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--gold2)}
+  .header-avatar{width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--dark);cursor:pointer;border:2px solid rgba(255,255,255,.3)}
+  .home-greeting{color:rgba(255,255,255,.75);font-size:13px;margin-bottom:3px;position:relative;z-index:1}
+  .home-name{color:white;font-family:'Syne',sans-serif;font-size:20px;font-weight:600;position:relative;z-index:1}
+  .home-stats-row{display:flex;gap:10px;margin-top:16px;position:relative;z-index:1}
+  .home-stat{background:rgba(255,255,255,.12);border-radius:12px;padding:10px 12px;flex:1;border:1px solid rgba(255,255,255,.15);cursor:pointer}
+  .home-stat-val{color:white;font-family:'Syne',sans-serif;font-size:18px;font-weight:700}
+  .home-stat-val small{font-size:11px;color:var(--gold2);font-weight:600}
+  .home-stat-lbl{color:rgba(255,255,255,.65);font-size:10px;margin-top:2px}
+
+  /* NEXT BOOKING BANNER */
+  .next-booking{background:var(--card);border:1px solid var(--green4);border-radius:16px;margin:16px 16px 0;padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;box-shadow:0 4px 14px rgba(26,92,58,.08)}
+  .nb-icon{width:44px;height:44px;border-radius:12px;background:var(--green3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .nb-icon svg{width:22px;height:22px;stroke:var(--green);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .nb-info{flex:1;min-width:0}
+  .nb-label{font-size:10px;color:var(--green2);font-weight:700;text-transform:uppercase;letter-spacing:.6px}
+  .nb-course{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .nb-when{font-size:12px;color:var(--muted);margin-top:1px}
+  .nb-arrow{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  .section-header{display:flex;justify-content:space-between;align-items:center;padding:20px 16px 10px}
+  .section-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:var(--text)}
+  .see-all{font-size:12px;color:var(--green2);font-weight:600;cursor:pointer}
+
+  /* QUICK COURSES (semana) */
+  .quick-row{display:flex;gap:10px;padding:2px 16px 4px;overflow-x:auto}
+  .quick-row::-webkit-scrollbar{display:none}
+  .quick-card{flex-shrink:0;width:150px;border-radius:16px;overflow:hidden;cursor:pointer;border:1px solid var(--border);background:var(--card)}
+  .quick-img{height:64px;position:relative;display:flex;align-items:flex-start;justify-content:flex-end;padding:7px}
+  .quick-save{background:var(--gold);color:var(--dark);font-size:10px;font-weight:700;border-radius:7px;padding:2px 7px}
+  .quick-info{padding:9px 11px 11px}
+  .quick-name{font-family:'Syne',sans-serif;font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .quick-price{font-size:11.5px;color:var(--green);font-weight:700;margin-top:3px}
+  .quick-price s{color:var(--muted);font-weight:400;margin-left:4px;font-size:10.5px}
+
+  /* POSTS */
+  .post-card{background:var(--card);border-radius:18px;margin:0 16px 14px;border:1px solid var(--border);overflow:hidden}
+  .post-header{display:flex;align-items:center;gap:10px;padding:14px 14px 10px}
+  .post-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:'Syne',sans-serif;flex-shrink:0}
+  .post-user{font-weight:600;font-size:14px;color:var(--text)}
+  .post-meta{font-size:11px;color:var(--muted);margin-top:1px}
+  .post-time{margin-left:auto;font-size:11px;color:var(--muted)}
+  .scorecard{margin:0 14px 12px;border-radius:14px;padding:14px;position:relative;overflow:hidden}
+  .scorecard::before{content:'';position:absolute;right:-15px;top:-15px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,.07)}
+  .sc-course{color:rgba(255,255,255,.75);font-size:11px;margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}
+  .sc-score-row{display:flex;align-items:flex-end;gap:8px;margin-bottom:12px}
+  .sc-score{font-family:'Syne',sans-serif;font-size:36px;font-weight:700;color:white;line-height:1}
+  .sc-par{font-size:14px;color:rgba(255,255,255,.6);padding-bottom:4px}
+  .sc-badge{background:rgba(255,255,255,.15);border-radius:8px;padding:4px 10px;font-size:12px;color:white;font-weight:600;margin-left:auto}
+  .sc-holes{display:flex;gap:4px}
+  .sc-hole{flex:1;background:rgba(255,255,255,.1);border-radius:6px;padding:5px 3px;text-align:center}
+  .sc-hole-n{font-size:9px;color:rgba(255,255,255,.5);margin-bottom:2px}
+  .sc-hole-s{font-size:12px;font-weight:700;color:white;font-family:'Syne',sans-serif}
+  .sc-hole.eagle{background:rgba(201,168,76,.45)}
+  .sc-hole.birdie{background:rgba(201,168,76,.25)}
+  .sc-hole.bogey{background:rgba(255,80,80,.22)}
+  .post-caption{padding:0 14px 10px;font-size:13px;color:var(--muted);line-height:1.5}
+  .post-caption span{color:var(--text);font-weight:500}
+  .post-footer{display:flex;align-items:center;padding:0 14px 12px;gap:16px}
+  .post-action{display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500}
+  .post-action svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .post-action.liked{color:#e74c3c}
+  .post-action.liked svg{fill:#e74c3c;stroke:#e74c3c}
+  .post-book{margin-left:auto;background:var(--green3);color:var(--green);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px}
+  .post-book svg{width:13px;height:13px;stroke:var(--green);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .comments-box{border-top:1px solid var(--border);padding:10px 14px;display:none}
+  .comments-box.open{display:block}
+  .comment-line{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:6px}
+  .comment-line b{color:var(--text);font-weight:600}
+  .comment-input-row{display:flex;gap:8px;margin-top:8px}
+  .comment-input{flex:1;border:1px solid var(--border);border-radius:18px;padding:8px 13px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;background:var(--bg);color:var(--text)}
+  .comment-send{background:var(--green);color:white;border:none;border-radius:18px;padding:0 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+
+  /* FAB */
+  .fab{position:absolute;bottom:90px;right:18px;width:54px;height:54px;border-radius:18px;background:var(--green);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 8px 22px rgba(26,92,58,.4);z-index:90;transition:transform .15s}
+  .fab:active{transform:scale(.93)}
+  .fab svg{width:24px;height:24px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ===== CANCHAS ===== */
+  .search-bar{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-top:12px;position:relative;z-index:1}
+  .search-bar svg{width:16px;height:16px;stroke:rgba(255,255,255,.8);flex-shrink:0;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .search-bar input{border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:14px;color:white;background:transparent;width:100%}
+  .search-bar input::placeholder{color:rgba(255,255,255,.55)}
+  .filter-chips{display:flex;gap:8px;padding:12px 16px 4px;overflow-x:auto}
+  .filter-chips::-webkit-scrollbar{display:none}
+  .chip{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:12px;color:var(--muted);font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s}
+  .chip.active{background:var(--green);border-color:var(--green);color:white}
+  .cancha-card{background:var(--card);border-radius:18px;margin:0 16px 14px;border:1px solid var(--border);overflow:hidden;cursor:pointer;transition:transform .15s}
+  .cancha-card:active{transform:scale(.98)}
+  .cancha-img{height:120px;position:relative;display:flex;align-items:flex-end;justify-content:space-between;padding:12px}
+  .cancha-img-overlay{position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Ccircle cx='30' cy='30' r='28' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='2'/%3E%3C/svg%3E") repeat}
+  .cancha-tag{background:rgba(45,122,82,.65);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:4px 10px;font-size:11px;color:white;font-weight:600;z-index:1;backdrop-filter:blur(4px)}
+  .cancha-tag.few{background:rgba(160,120,30,.7)}
+  .save-badge{background:var(--gold);color:var(--dark);border-radius:8px;padding:4px 9px;font-size:11px;font-weight:800;z-index:1}
+  .cancha-info{padding:14px}
+  .cancha-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .cancha-loc{font-size:12px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:4px}
+  .cancha-loc svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+  .cancha-row{display:flex;align-items:center;justify-content:space-between}
+  .cancha-price{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--green)}
+  .cancha-price s{font-size:11px;color:var(--muted);font-weight:400;font-family:'DM Sans',sans-serif;margin-left:5px}
+  .cancha-price-sub{font-size:10.5px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400;margin-top:1px}
+  .cancha-rating{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-top:4px}
+  .star{color:var(--gold)}
+  .cancha-btn{background:var(--green);color:white;border:none;border-radius:10px;padding:9px 16px;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer}
+  .empty-state{text-align:center;padding:48px 32px;color:var(--muted)}
+  .empty-state svg{width:44px;height:44px;stroke:var(--green4);fill:none;stroke-width:1.5;margin-bottom:12px}
+  .empty-state-t{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px}
+  .empty-state p{font-size:13px;line-height:1.5}
+
+  /* ===== DETALLE CANCHA ===== */
+  .det-hero{height:190px;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:16px;flex-shrink:0}
+  .det-hero .back-btn{margin:0;color:white;background:rgba(0,0,0,.25);border-radius:10px;padding:7px 12px;backdrop-filter:blur(4px);align-self:flex-start}
+  .det-hero-bottom{display:flex;justify-content:space-between;align-items:flex-end;z-index:1}
+  .det-name{font-family:'Syne',sans-serif;font-size:21px;font-weight:700;color:white}
+  .det-loc{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px}
+  .det-stats{display:flex;background:var(--card);margin:-16px 16px 0;border-radius:16px;border:1px solid var(--border);position:relative;z-index:10;overflow:hidden;box-shadow:0 6px 18px rgba(15,31,21,.07)}
+  .det-stat{flex:1;padding:13px 6px;text-align:center;border-right:1px solid var(--border)}
+  .det-stat:last-child{border-right:none}
+  .det-stat-v{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--text)}
+  .det-stat-l{font-size:10px;color:var(--muted);margin-top:2px}
+  .det-desc{padding:18px 18px 4px;font-size:13.5px;color:var(--muted);line-height:1.65}
+  .det-services{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px 4px}
+  .service-pill{background:var(--green3);color:var(--green);border-radius:10px;padding:6px 12px;font-size:12px;font-weight:600}
+  .price-compare{background:var(--gold3);border:1px solid #ead9a8;border-radius:16px;margin:16px;padding:14px 16px}
+  .pc-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+  .pc-label{font-size:13px;color:var(--muted)}
+  .pc-old{font-size:13px;color:var(--muted);text-decoration:line-through}
+  .pc-new{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--green)}
+  .pc-save{background:var(--gold);color:var(--dark);font-size:11px;font-weight:800;border-radius:7px;padding:3px 8px}
+  .det-cta{background:var(--green);color:white;border:none;border-radius:14px;padding:16px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;width:calc(100% - 32px);margin:4px 16px 18px;display:block}
+
+  /* ===== HORARIOS ===== */
+  .date-selector{display:flex;gap:8px;padding:12px 16px;overflow-x:auto}
+  .date-selector::-webkit-scrollbar{display:none}
+  .date-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 13px;border-radius:14px;border:1px solid var(--border);cursor:pointer;background:var(--card);flex-shrink:0;transition:all .18s;min-width:56px;position:relative}
+  .date-item.active{background:var(--green);border-color:var(--green)}
+  .date-day{font-size:10px;color:var(--muted);font-weight:600;text-transform:uppercase}
+  .date-num{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text)}
+  .date-item.active .date-day,.date-item.active .date-num{color:white}
+  .date-promo{width:6px;height:6px;border-radius:50%;background:var(--gold);margin-top:1px}
+  .date-item.active .date-promo{background:var(--gold2)}
+  .week-banner{margin:4px 16px 4px;background:var(--gold3);border:1px solid #ead9a8;border-radius:12px;padding:10px 14px;font-size:12px;color:#7a6020;font-weight:500;display:flex;align-items:center;gap:8px}
+  .week-banner b{color:#5c4815}
+  .tee-slot{background:var(--card);border-radius:14px;margin:0 16px 10px;border:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;cursor:pointer;transition:all .18s}
+  .tee-slot:active{transform:scale(.98)}
+  .tee-slot.taken{opacity:.45;pointer-events:none}
+  .tee-time{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);width:70px;flex-shrink:0}
+  .tee-info{flex:1;min-width:0}
+  .tee-spots{font-size:12px;color:var(--green2);font-weight:600}
+  .tee-spots.full{color:var(--muted)}
+  .tee-type{font-size:11px;color:var(--muted);margin-top:2px}
+  .tee-price{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--green);margin-left:auto;text-align:right}
+  .tee-price small{display:block;font-size:9.5px;color:var(--gold);font-family:'DM Sans',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+  .tee-arrow{width:20px;height:20px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;margin-left:8px;flex-shrink:0}
+
+  /* ===== RESERVA ===== */
+  .reserva-card{background:var(--card);border-radius:18px;margin:16px;border:1px solid var(--border);overflow:hidden}
+  .reserva-header-mini{background:var(--green3);padding:14px 16px;border-bottom:1px solid var(--border)}
+  .reserva-cancha{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;color:var(--green)}
+  .reserva-time{font-size:13px;color:var(--muted);margin-top:2px}
+  .player-row{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .player-row:last-of-type{border-bottom:none}
+  .player-num{width:28px;height:28px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;font-family:'Syne',sans-serif;flex-shrink:0}
+  .player-input{border:none;outline:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);background:transparent;flex:1;min-width:0}
+  .player-input::placeholder{color:var(--muted)}
+  .player-badge{font-size:11px;color:var(--green2);font-weight:600;background:var(--green3);padding:3px 8px;border-radius:6px;flex-shrink:0}
+  .player-remove{width:24px;height:24px;border-radius:50%;background:var(--red-bg);color:var(--red);border:none;cursor:pointer;font-size:13px;line-height:1;flex-shrink:0;font-weight:700}
+  .add-player{display:flex;align-items:center;gap:8px;padding:13px 16px;color:var(--green2);font-size:13px;font-weight:600;cursor:pointer;border-top:1px dashed var(--border)}
+  .add-player svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+  .credit-toggle{background:var(--card);border-radius:16px;margin:0 16px 14px;border:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+  .credit-toggle.on{border-color:var(--green2);background:var(--green3)}
+  .ct-info{flex:1}
+  .ct-title{font-size:13.5px;font-weight:600;color:var(--text)}
+  .ct-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .switch{width:44px;height:25px;border-radius:14px;background:#cfdcd4;position:relative;transition:background .2s;flex-shrink:0}
+  .switch::after{content:'';position:absolute;top:2.5px;left:3px;width:20px;height:20px;border-radius:50%;background:white;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+  .credit-toggle.on .switch{background:var(--green)}
+  .credit-toggle.on .switch::after{left:21px}
+  .reserva-summary{background:var(--card);border-radius:18px;margin:0 16px 14px;border:1px solid var(--border);padding:14px 16px}
+  .summary-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+  .summary-row:last-child{border-bottom:none;padding-top:10px}
+  .summary-label{font-size:13px;color:var(--muted)}
+  .summary-value{font-size:13px;color:var(--text);font-weight:500}
+  .summary-total{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--green)}
+  .pay-btn{background:var(--green);color:white;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;width:calc(100% - 32px);margin:0 16px 12px;display:block}
+  .legal-note{text-align:center;font-size:11px;color:var(--muted);margin-bottom:18px;padding:0 24px;line-height:1.5}
+
+  /* ===== CONFIRMACIÓN ===== */
+  #screen-confirm{background:linear-gradient(160deg,var(--green) 0%,#11402a 100%)}
+  .confirm-wrap{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:36px 24px 110px;text-align:center}
+  .confirm-wrap::-webkit-scrollbar{display:none}
+  .confirm-check{width:78px;height:78px;border-radius:50%;background:rgba(201,168,76,.18);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+  .confirm-check svg{width:36px;height:36px;stroke:var(--gold2);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+  .confirm-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;color:white;margin-bottom:6px}
+  .confirm-sub{color:rgba(255,255,255,.65);font-size:13.5px;margin-bottom:24px}
+  .ticket{background:white;border-radius:20px;width:100%;overflow:hidden;text-align:left;flex-shrink:0}
+  .confirm-check,.confirm-actions{flex-shrink:0}
+  .ticket-head{background:var(--green3);padding:16px;border-bottom:1px dashed var(--green4)}
+  .ticket-course{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--green)}
+  .ticket-when{font-size:13px;color:var(--muted);margin-top:3px}
+  .ticket-body{padding:14px 16px}
+  .ticket-row{display:flex;justify-content:space-between;padding:5px 0;font-size:13px}
+  .ticket-row .l{color:var(--muted)}
+  .ticket-row .v{color:var(--text);font-weight:600}
+  .ticket-code{border-top:1px dashed var(--border);margin-top:8px;padding-top:14px;text-align:center}
+  .ticket-code-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+  .ticket-code-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--green);letter-spacing:4px}
+  .qr-grid{display:grid;grid-template-columns:repeat(9,10px);gap:2px;justify-content:center;margin:12px 0 4px}
+  .qr-cell{width:10px;height:10px;border-radius:2px;background:var(--border)}
+  .qr-cell.f{background:var(--dark)}
+  .confirm-actions{width:100%;margin-top:18px;display:flex;flex-direction:column;gap:10px}
+  .btn-gold{background:var(--gold);color:var(--dark);border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%}
+  .btn-ghost{background:rgba(255,255,255,.1);color:white;border:1px solid rgba(255,255,255,.25);border-radius:14px;padding:14px;font-size:14px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%}
+
+  /* ===== MIS RESERVAS ===== */
+  .booking-card{background:var(--card);border-radius:18px;margin:0 16px 14px;border:1px solid var(--border);overflow:hidden}
+  .booking-top{padding:14px 16px;display:flex;align-items:center;gap:12px}
+  .booking-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Syne',sans-serif;font-weight:700;color:white;font-size:15px}
+  .booking-info{flex:1;min-width:0}
+  .booking-course{font-family:'Syne',sans-serif;font-size:15px;font-weight:600;color:var(--text)}
+  .booking-when{font-size:12px;color:var(--muted);margin-top:2px}
+  .booking-code{font-size:11px;color:var(--green2);font-weight:700;background:var(--green3);border-radius:7px;padding:3px 8px;flex-shrink:0}
+  .booking-bottom{border-top:1px solid var(--border);display:flex}
+  .booking-act{flex:1;padding:11px;text-align:center;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--green2)}
+  .booking-act+.booking-act{border-left:1px solid var(--border)}
+  .booking-act.danger{color:var(--red)}
+  .past-booking{opacity:.75}
+  .status-pill{font-size:10px;font-weight:700;border-radius:6px;padding:2px 7px;text-transform:uppercase;letter-spacing:.3px}
+  .status-pill.ok{background:var(--green3);color:var(--green2)}
+  .status-pill.done{background:#eee;color:#888}
+
+  /* ===== CHAT ===== */
+  .chat-list{flex:1;overflow-y:auto;padding-bottom:90px}
+  .chat-list::-webkit-scrollbar{display:none}
+  .chat-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;background:var(--card);transition:background .15s}
+  .chat-item:active{background:var(--accent)}
+  .chat-av{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;font-family:'Syne',sans-serif;flex-shrink:0;position:relative}
+  .online-dot{position:absolute;bottom:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#2ecc71;border:2px solid var(--card)}
+  .chat-info{flex:1;min-width:0}
+  .chat-name{font-weight:600;font-size:14px;color:var(--text)}
+  .chat-preview{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+  .chat-time{font-size:11px;color:var(--muted)}
+  .chat-badge{background:var(--green);color:white;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+  .chat-detail-header{background:var(--green);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+  .chat-detail-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;font-family:'Syne',sans-serif;flex-shrink:0}
+  .chat-detail-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:600;color:white}
+  .chat-detail-status{font-size:11px;color:rgba(255,255,255,.65)}
+  .messages-area{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:var(--bg);min-height:0}
+  .messages-area::-webkit-scrollbar{display:none}
+  .msg{max-width:74%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5}
+  .msg.received{background:var(--card);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px;align-self:flex-start}
+  .msg.sent{background:var(--green);color:white;border-bottom-right-radius:4px;align-self:flex-end}
+  .msg-time{font-size:10px;opacity:.6;margin-top:3px;text-align:right}
+  .msg-invite{background:var(--green3);border:1px solid var(--green4);border-radius:14px;padding:12px 14px;margin:2px 0;align-self:flex-start;max-width:86%;cursor:pointer}
+  .msg-invite.mine{align-self:flex-end;background:var(--gold3);border-color:#ead9a8}
+  .msg-invite-label{font-size:10px;color:var(--green2);font-weight:700;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+  .msg-invite.mine .msg-invite-label{color:#9a7b25}
+  .msg-invite-content{font-size:13px;color:var(--text);font-weight:600}
+  .msg-invite-cta{margin-top:8px;font-size:12px;color:var(--green);font-weight:700}
+  .chat-input-bar{background:var(--card);border-top:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .chat-input{flex:1;border:1px solid var(--border);border-radius:20px;padding:10px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:var(--bg);color:var(--text)}
+  .chat-send{width:38px;height:38px;border-radius:50%;background:var(--green);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .chat-send svg{width:16px;height:16px;stroke:white;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ===== PERFIL ===== */
+  .perfil-header{background:linear-gradient(135deg,var(--green) 0%,var(--green2) 100%);padding:24px 16px 36px;text-align:center;position:relative;flex-shrink:0}
+  .perfil-av{width:76px;height:76px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:26px;font-family:'Syne',sans-serif;color:var(--dark);margin:0 auto 12px;border:3px solid rgba(255,255,255,.3)}
+  .perfil-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:white}
+  .perfil-hcp{color:rgba(255,255,255,.7);font-size:13px;margin-top:3px}
+  .perfil-hcp span{color:var(--gold2);font-weight:600}
+  .perfil-stats{display:flex;background:var(--card);margin:0 16px;border-radius:16px;border:1px solid var(--border);margin-top:-20px;position:relative;z-index:10;overflow:hidden;box-shadow:0 6px 18px rgba(15,31,21,.06)}
+  .p-stat{flex:1;padding:14px 6px;text-align:center;border-right:1px solid var(--border)}
+  .p-stat:last-child{border-right:none}
+  .p-stat-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;color:var(--text)}
+  .p-stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;font-weight:500}
+  .plan-card{background:linear-gradient(135deg,var(--dark),var(--mid));border-radius:18px;margin:16px;padding:16px;color:white;cursor:pointer;position:relative;overflow:hidden}
+  .plan-card::after{content:'';position:absolute;right:-25px;top:-25px;width:110px;height:110px;border-radius:50%;background:rgba(201,168,76,.12)}
+  .plan-row{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1}
+  .plan-name{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--gold2)}
+  .plan-sub{font-size:12px;color:rgba(255,255,255,.6);margin-top:3px}
+  .plan-credits{text-align:right}
+  .plan-credits-v{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:white}
+  .plan-credits-l{font-size:10px;color:rgba(255,255,255,.55)}
+  .plan-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.15);margin-top:13px;position:relative;z-index:1;overflow:hidden}
+  .plan-bar-fill{height:100%;border-radius:3px;background:var(--gold);transition:width .3s}
+  .plan-manage{font-size:11.5px;color:var(--gold2);font-weight:600;margin-top:10px;position:relative;z-index:1}
+  .history-item{background:var(--card);border-radius:16px;margin:0 16px 12px;border:1px solid var(--border);overflow:hidden;cursor:pointer}
+  .history-top{padding:12px 14px;display:flex;align-items:center;justify-content:space-between}
+  .history-course{font-family:'Syne',sans-serif;font-size:14px;font-weight:600;color:var(--text)}
+  .history-date{font-size:11px;color:var(--muted)}
+  .history-score-row{padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+  .h-score{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:white}
+  .h-score-lbl{font-size:10px;color:rgba(255,255,255,.65);margin-bottom:2px}
+  .h-holes{display:flex;gap:3px}
+  .h-hole{width:22px;height:22px;border-radius:5px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;font-family:'Syne',sans-serif}
+  .h-hole.b{background:rgba(201,168,76,.5)}
+  .h-hole.e{background:rgba(201,168,76,.85)}
+  .h-hole.bg{background:rgba(255,80,80,.4)}
+  .settings-item{background:var(--card);margin:0 16px 8px;border-radius:14px;border:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;cursor:pointer}
+  .settings-icon{width:36px;height:36px;border-radius:10px;background:var(--green3);display:flex;align-items:center;justify-content:center;margin-right:12px;flex-shrink:0}
+  .settings-icon svg{width:18px;height:18px;stroke:var(--green);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .settings-label{font-size:14px;color:var(--text);font-weight:500;flex:1}
+  .settings-arrow{width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+  /* ===== PLAN / SUSCRIPCIÓN ===== */
+  .plan-option{background:var(--card);border:1.5px solid var(--border);border-radius:18px;margin:0 16px 14px;padding:18px 16px;cursor:pointer;position:relative;transition:all .15s}
+  .plan-option.current{border-color:var(--green);background:var(--green3)}
+  .plan-option.featured{border-color:var(--gold)}
+  .po-tag{position:absolute;top:-9px;right:16px;background:var(--gold);color:var(--dark);font-size:10px;font-weight:800;border-radius:7px;padding:3px 9px;text-transform:uppercase;letter-spacing:.4px}
+  .po-tag.cur{background:var(--green);color:white}
+  .po-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+  .po-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--text)}
+  .po-price{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--green)}
+  .po-price small{font-size:11px;color:var(--muted);font-family:'DM Sans',sans-serif;font-weight:400}
+  .po-desc{font-size:12.5px;color:var(--muted);line-height:1.55;margin-bottom:10px}
+  .po-perks{display:flex;flex-direction:column;gap:6px}
+  .po-perk{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text)}
+  .po-perk svg{width:14px;height:14px;stroke:var(--green2);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+  .po-cta{margin-top:12px;background:var(--green);color:white;border:none;border-radius:11px;padding:11px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%}
+  .po-cta.gold{background:var(--gold);color:var(--dark);font-weight:700}
+  .po-cta.disabled{background:var(--border);color:var(--muted);cursor:default}
+
+  /* ===== MODAL ===== */
+  .modal-backdrop{position:absolute;inset:0;background:rgba(15,31,21,.55);z-index:200;display:none;align-items:flex-end;backdrop-filter:blur(2px)}
+  .modal-backdrop.open{display:flex}
+  .modal-sheet{background:var(--card);border-radius:24px 24px 0 0;width:100%;max-height:82%;overflow-y:auto;padding:10px 20px 28px;animation:slideUp .25s ease}
+  .modal-sheet::-webkit-scrollbar{display:none}
+  @keyframes slideUp{from{transform:translateY(60px);opacity:.4}to{transform:translateY(0);opacity:1}}
+  .modal-handle{width:42px;height:4px;border-radius:2px;background:var(--border);margin:6px auto 16px}
+  .modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--text);margin-bottom:16px}
+  .form-label{font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 7px}
+  .form-select,.form-input{width:100%;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:14px;font-family:'DM Sans',sans-serif;outline:none;background:var(--bg);color:var(--text);appearance:none}
+  .seg-row{display:flex;gap:8px}
+  .seg{flex:1;border:1px solid var(--border);border-radius:12px;padding:11px;text-align:center;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;background:var(--bg)}
+  .seg.active{background:var(--green);border-color:var(--green);color:white}
+  .modal-cta{margin-top:20px;background:var(--green);color:white;border:none;border-radius:13px;padding:15px;font-size:15px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;width:100%}
+
+  /* TOAST */
+  .toast{position:absolute;top:54px;left:50%;transform:translateX(-50%) translateY(-90px);background:var(--dark);color:white;padding:11px 20px;border-radius:13px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s;white-space:nowrap;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90%;overflow:hidden;text-overflow:ellipsis}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status">
+    <span id="clock">9:41</span>
+    <span style="display:flex;gap:6px;align-items:center">
+      <svg width="14" height="12" viewBox="0 0 24 20" fill="white"><rect x="0" y="12" width="4" height="6" rx="1"/><rect x="6" y="8" width="4" height="10" rx="1"/><rect x="12" y="4" width="4" height="14" rx="1"/><rect x="18" y="0" width="4" height="18" rx="1"/></svg>
+      <svg width="16" height="11" viewBox="0 0 24 16" fill="white"><rect x="0" y="3" width="19" height="11" rx="2.5" fill="none" stroke="white" stroke-width="1.4"/><rect x="20.5" y="6.5" width="2.5" height="4" rx="1"/><rect x="2" y="5" width="13" height="7" rx="1.2"/></svg>
+    </span>
+  </div>
+
+  <!-- ════════ ONBOARDING ════════ -->
+  <div class="screen active" id="screen-onboarding">
+    <div class="ob-skip" onclick="finishOnboarding()">Saltar</div>
+    <div class="ob-slide active" id="ob-0">
+      <div class="ob-logo-mark">
+        <svg width="58" height="58" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#c9a84c" stroke-width="2.5"/><ellipse cx="50" cy="72" rx="30" ry="11" fill="#2d7a52"/><line x1="50" y1="22" x2="50" y2="72" stroke="#f0d080" stroke-width="3.5" stroke-linecap="round"/><path d="M50 22 L78 32 L50 42 Z" fill="#c9a84c"/><circle cx="38" cy="70" r="4.5" fill="#fff"/></svg>
+      </div>
+      <div class="ob-tagline">Tu pase al golf</div>
+      <div class="ob-title">Bienvenido a<br>Tu<em>Caddie</em></div>
+      <div class="ob-text">Jugá en los mejores clubes de Argentina pagando hasta un <b style="color:var(--gold2)">60% menos</b> que el fee de invitado tradicional.</div>
+    </div>
+    <div class="ob-slide" id="ob-1">
+      <div class="ob-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M8 14h2v2H8zM12 14h2v2h-2z"/></svg></div>
+      <div class="ob-title">Turnos de semana,<br><em>precios de socio</em></div>
+      <div class="ob-text">Los clubes liberan sus horarios ociosos de lunes a viernes exclusivamente para la comunidad TuCaddie. Vos jugás más barato, el club llena su cancha. Todos ganan.</div>
+    </div>
+    <div class="ob-slide" id="ob-2">
+      <div class="ob-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="ob-title">Compartí tu juego<br>con <em>la comunidad</em></div>
+      <div class="ob-text">Publicá tus tarjetas de score, seguí a otros jugadores, armá salidas por chat y descubrí canchas nuevas a través de tu feed.</div>
+    </div>
+    <div class="ob-bottom">
+      <div class="ob-dots"><div class="ob-dot active" id="dot-0"></div><div class="ob-dot" id="dot-1"></div><div class="ob-dot" id="dot-2"></div></div>
+      <button class="ob-btn" id="ob-next" onclick="nextOnboarding()">Siguiente</button>
+    </div>
+  </div>
+
+  <!-- ════════ HOME ════════ -->
+  <div class="screen" id="screen-home">
+    <div class="scroll-content">
+      <div class="g-header" style="padding-bottom:26px">
+        <div class="header-top">
+          <div class="app-logo">
+            <div class="logo-flag"><svg viewBox="0 0 100 100"><line x1="38" y1="18" x2="38" y2="80" stroke="#f0d080" stroke-width="8" stroke-linecap="round"/><path d="M38 18 L80 30 L38 44 Z" fill="#c9a84c"/></svg></div>
+            Tu<span>Caddie</span>
+          </div>
+          <div class="header-actions">
+            <div class="bell-btn" onclick="toast('⛳ Nuevo: 12 turnos liberados esta semana en GBA Norte')"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg><div class="bell-badge"></div></div>
+            <div class="header-avatar" onclick="showTab('perfil')">MR</div>
+          </div>
+        </div>
+        <div class="home-greeting" id="greeting">Buenos días,</div>
+        <div class="home-name">Mateo Rodríguez</div>
+        <div class="home-stats-row">
+          <div class="home-stat"><div class="home-stat-val" id="stat-salidas">3</div><div class="home-stat-lbl">Salidas este mes</div></div>
+          <div class="home-stat"><div class="home-stat-val">14,2</div><div class="home-stat-lbl">Handicap</div></div>
+          <div class="home-stat" onclick="showScreen('plan')"><div class="home-stat-val" id="stat-credits">2 <small>▸</small></div><div class="home-stat-lbl">Créditos del plan</div></div>
+        </div>
+      </div>
+
+      <div id="next-booking-slot"></div>
+
+      <div class="section-header">
+        <div class="section-title">Jugá esta semana</div>
+        <div class="see-all" onclick="showTab('canchas')">Ver canchas</div>
+      </div>
+      <div class="quick-row" id="quick-row"></div>
+
+      <div class="section-header">
+        <div class="section-title">Actividad de la comunidad</div>
+      </div>
+      <div id="feed"></div>
+    </div>
+    <div class="fab" onclick="openPostModal()" title="Publicar score"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+    <nav class="navbar" data-tab="home"></nav>
+  </div>
+
+  <!-- ════════ CANCHAS ════════ -->
+  <div class="screen" id="screen-canchas">
+    <div class="g-header">
+      <div class="screen-title">Canchas</div>
+      <div class="screen-sub" id="canchas-count">Clubes adheridos con turnos liberados</div>
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Buscar cancha o ubicación..." id="search-canchas" oninput="renderCanchas()">
+      </div>
+    </div>
+    <div class="scroll-content" style="padding-top:2px">
+      <div class="filter-chips" id="zone-chips"></div>
+      <div class="filter-chips" style="padding-top:2px" id="holes-chips"></div>
+      <div id="canchas-list" style="margin-top:12px"></div>
+    </div>
+    <nav class="navbar" data-tab="canchas"></nav>
+  </div>
+
+  <!-- ════════ DETALLE CANCHA ════════ -->
+  <div class="screen" id="screen-detalle">
+    <div class="scroll-content" style="padding-bottom:90px">
+      <div class="det-hero" id="det-hero">
+        <div class="back-btn" onclick="showTab('canchas')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Canchas</div>
+        <div class="det-hero-bottom">
+          <div><div class="det-name" id="det-name"></div><div class="det-loc" id="det-loc"></div></div>
+        </div>
+      </div>
+      <div class="det-stats" id="det-stats"></div>
+      <div class="det-desc" id="det-desc"></div>
+      <div class="det-services" id="det-services"></div>
+      <div class="price-compare">
+        <div class="pc-row"><div class="pc-label">Fee de invitado tradicional</div><div class="pc-old" id="det-guest"></div></div>
+        <div class="pc-row"><div class="pc-label" style="font-weight:600;color:var(--text)">Green fee con TuCaddie</div><div style="display:flex;align-items:center;gap:8px"><div class="pc-new" id="det-price"></div><div class="pc-save" id="det-save"></div></div></div>
+        <div style="font-size:11px;color:#9a7b25;margin-top:6px">Precio entre semana · Lunes a viernes</div>
+      </div>
+      <button class="det-cta" onclick="showHorarios(state.detCourse)">Ver turnos disponibles</button>
+    </div>
+    <nav class="navbar" data-tab="canchas"></nav>
+  </div>
+
+  <!-- ════════ HORARIOS ════════ -->
+  <div class="screen" id="screen-horarios">
+    <div class="g-header">
+      <div class="back-btn" onclick="showScreen('detalle')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Volver</div>
+      <div class="screen-title" id="horarios-title"></div>
+      <div class="screen-sub">Seleccioná fecha y horario de salida</div>
+    </div>
+    <div class="scroll-content" style="padding-top:2px">
+      <div class="date-selector" id="date-selector"></div>
+      <div id="week-banner-slot"></div>
+      <div class="section-header" style="padding-top:8px">
+        <div class="section-title">Turnos disponibles</div>
+        <div class="see-all" id="horarios-date-label"></div>
+      </div>
+      <div id="slots-list"></div>
+    </div>
+    <nav class="navbar" data-tab="canchas"></nav>
+  </div>
+
+  <!-- ════════ RESERVA ════════ -->
+  <div class="screen" id="screen-reserva">
+    <div class="g-header">
+      <div class="back-btn" onclick="showScreen('horarios')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Volver</div>
+      <div class="screen-title">Completar reserva</div>
+      <div class="screen-sub">Matrículas de hasta 4 jugadores</div>
+    </div>
+    <div class="scroll-content" style="padding-top:2px">
+      <div class="reserva-card">
+        <div class="reserva-header-mini">
+          <div class="reserva-cancha" id="res-cancha"></div>
+          <div class="reserva-time" id="res-time"></div>
+        </div>
+        <div id="players-list"></div>
+        <div class="add-player" id="add-player-btn" onclick="addPlayer()"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Agregar jugador</div>
+      </div>
+      <div class="credit-toggle" id="credit-toggle" onclick="toggleCredit()">
+        <div class="ct-info">
+          <div class="ct-title">Usar 1 crédito del plan</div>
+          <div class="ct-sub" id="ct-sub"></div>
+        </div>
+        <div class="switch"></div>
+      </div>
+      <div class="reserva-summary" id="reserva-summary"></div>
+      <button class="pay-btn" onclick="confirmBooking()">Confirmar y pagar</button>
+      <div class="legal-note">El pago se procesa de forma segura vía Mercado Pago. Cancelación gratuita hasta 24 hs antes del turno; después se retiene el 50%.</div>
+    </div>
+    <nav class="navbar" data-tab="canchas"></nav>
+  </div>
+
+  <!-- ════════ CONFIRMACIÓN ════════ -->
+  <div class="screen" id="screen-confirm">
+    <div class="confirm-wrap">
+      <div class="confirm-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <div class="confirm-title">¡Reserva confirmada!</div>
+      <div class="confirm-sub">Presentá este código en la recepción del club</div>
+      <div class="ticket">
+        <div class="ticket-head">
+          <div class="ticket-course" id="cf-course"></div>
+          <div class="ticket-when" id="cf-when"></div>
+        </div>
+        <div class="ticket-body">
+          <div id="cf-rows"></div>
+          <div class="ticket-code">
+            <div class="qr-grid" id="cf-qr"></div>
+            <div class="ticket-code-label">Código de reserva</div>
+            <div class="ticket-code-val" id="cf-code"></div>
+          </div>
+        </div>
+      </div>
+      <div class="confirm-actions">
+        <button class="btn-gold" onclick="shareBookingToChat()">Invitar amigos por chat</button>
+        <button class="btn-ghost" onclick="toast('📅 Agregado a tu calendario')">Agregar al calendario</button>
+        <button class="btn-ghost" onclick="showTab('home')">Volver al inicio</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ MIS RESERVAS ════════ -->
+  <div class="screen" id="screen-reservas">
+    <div class="g-header">
+      <div class="screen-title">Mis reservas</div>
+      <div class="screen-sub">Próximas salidas e historial</div>
+    </div>
+    <div class="scroll-content" style="padding-top:6px" id="bookings-list"></div>
+    <nav class="navbar" data-tab="reservas"></nav>
+  </div>
+
+  <!-- ════════ CHAT LIST ════════ -->
+  <div class="screen" id="screen-chat">
+    <div class="g-header">
+      <div class="screen-title">Mensajes</div>
+      <div class="screen-sub">Organizate para jugar</div>
+    </div>
+    <div class="chat-list" id="chat-list"></div>
+    <nav class="navbar" data-tab="chat"></nav>
+  </div>
+
+  <!-- ════════ CHAT DETALLE ════════ -->
+  <div class="screen" id="screen-chatdetail">
+    <div class="chat-detail-header">
+      <div class="back-btn" style="margin:0 4px 0 0" onclick="showTab('chat')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></div>
+      <div class="chat-detail-av" id="cd-av"></div>
+      <div><div class="chat-detail-name" id="cd-name"></div><div class="chat-detail-status" id="cd-status"></div></div>
+    </div>
+    <div class="messages-area" id="messages-area"></div>
+    <div class="chat-input-bar">
+      <input class="chat-input" placeholder="Mensaje..." id="chat-msg-input" onkeydown="if(event.key==='Enter')sendMessage()">
+      <div class="chat-send" onclick="sendMessage()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></div>
+    </div>
+  </div>
+
+  <!-- ════════ PERFIL ════════ -->
+  <div class="screen" id="screen-perfil">
+    <div class="scroll-content">
+      <div class="perfil-header">
+        <div class="perfil-av">MR</div>
+        <div class="perfil-name">Mateo Rodríguez</div>
+        <div class="perfil-hcp">Matrícula AAG 158.213 · Handicap <span>14,2</span></div>
+      </div>
+      <div class="perfil-stats">
+        <div class="p-stat"><div class="p-stat-val" id="p-salidas">23</div><div class="p-stat-lbl">Salidas</div></div>
+        <div class="p-stat"><div class="p-stat-val">8</div><div class="p-stat-lbl">Canchas</div></div>
+        <div class="p-stat"><div class="p-stat-val">47</div><div class="p-stat-lbl">Seguidores</div></div>
+        <div class="p-stat"><div class="p-stat-val">82</div><div class="p-stat-lbl">Mejor score</div></div>
+      </div>
+      <div class="plan-card" onclick="showScreen('plan')" id="plan-card"></div>
+      <div class="section-header" style="padding-top:2px">
+        <div class="section-title">Historial de salidas</div>
+        <div class="see-all" onclick="showTab('reservas')">Ver reservas</div>
+      </div>
+      <div id="history-list"></div>
+      <div class="section-header" style="padding-top:6px"><div class="section-title">Mi cuenta</div></div>
+      <div class="settings-item" onclick="toast('✏️ Edición de perfil — próximamente en la beta')">
+        <div class="settings-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="settings-label">Editar perfil</div>
+        <svg class="settings-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="settings-item" onclick="showScreen('plan')">
+        <div class="settings-icon"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
+        <div class="settings-label">Suscripción y pagos</div>
+        <svg class="settings-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="settings-item" onclick="toast('📊 Estadísticas avanzadas — próximamente')">
+        <div class="settings-icon"><svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg></div>
+        <div class="settings-label">Mis estadísticas</div>
+        <svg class="settings-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="settings-item" onclick="toast('🔔 Notificaciones activadas')">
+        <div class="settings-icon"><svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <div class="settings-label">Notificaciones</div>
+        <svg class="settings-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="settings-item" style="margin-bottom:24px" onclick="toast('👋 ¡Hasta la próxima!')">
+        <div class="settings-icon" style="background:var(--red-bg)"><svg viewBox="0 0 24 24" style="stroke:var(--red)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
+        <div class="settings-label" style="color:var(--red)">Cerrar sesión</div>
+        <svg class="settings-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <nav class="navbar" data-tab="perfil"></nav>
+  </div>
+
+  <!-- ════════ PLAN ════════ -->
+  <div class="screen" id="screen-plan">
+    <div class="g-header">
+      <div class="back-btn" onclick="showTab('perfil')"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Volver</div>
+      <div class="screen-title">Tu plan</div>
+      <div class="screen-sub">Jugá más, pagá menos por salida</div>
+    </div>
+    <div class="scroll-content" style="padding-top:18px" id="plans-list"></div>
+    <nav class="navbar" data-tab="perfil"></nav>
+  </div>
+
+  <!-- ════════ MODAL: PUBLICAR SCORE ════════ -->
+  <div class="modal-backdrop" id="post-modal" onclick="if(event.target===this)closePostModal()">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Publicar tarjeta de score</div>
+      <div class="form-label">Cancha</div>
+      <select class="form-select" id="post-course"></select>
+      <div class="form-label">Hoyos jugados</div>
+      <div class="seg-row">
+        <div class="seg active" id="seg-18" onclick="setHoles(18)">18 hoyos · Par 72</div>
+        <div class="seg" id="seg-9" onclick="setHoles(9)">9 hoyos · Par 36</div>
+      </div>
+      <div class="form-label">Tu score total</div>
+      <input class="form-input" type="number" id="post-score" placeholder="Ej: 85" min="18" max="160">
+      <div class="form-label">Comentario (opcional)</div>
+      <input class="form-input" id="post-caption" placeholder="¿Cómo estuvo la vuelta?">
+      <button class="modal-cta" onclick="publishScore()">Publicar en el feed</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ════════════════ DATA ════════════════ */
+const fmt = n => '$' + n.toLocaleString('es-AR');
+
+const COURSES = [
+  {id:1, name:'Nordelta Golf Club', loc:'Tigre, Buenos Aires', zona:'GBA Norte', hoyos:18, par:72, dist:18, rating:4.8, reviews:124, precio:19500, guest:48000, grad:'linear-gradient(135deg,#2d5a3d 0%,#1a3d28 50%,#0f2518 100%)',
+   desc:'Diseño de Jack Nicklaus sobre los lagos de Nordelta. Fairways anchos, greens rápidos y un cierre espectacular sobre el agua. Ideal para handicaps medios que buscan un desafío de nivel.',
+   serv:['Carro incluido','Driving range','Caddie opcional','Proshop','Restaurante']},
+  {id:2, name:'CUBA Golf Club', loc:'Villa de Mayo, Buenos Aires', zona:'GBA Norte', hoyos:18, par:71, dist:34, rating:4.9, reviews:89, precio:17800, guest:42000, grad:'linear-gradient(135deg,#3d2a1a 0%,#5c3d28 100%)',
+   desc:'Cancha histórica entre arboledas centenarias. Calles angostas que premian la precisión sobre la distancia. Uno de los recorridos con más tradición del corredor norte.',
+   serv:['Driving range','Putting green','Proshop','Buffet']},
+  {id:3, name:'Lagos de Palermo GC', loc:'Palermo, CABA', zona:'Capital', hoyos:18, par:70, dist:4, rating:4.7, reviews:211, precio:22500, guest:55000, grad:'linear-gradient(135deg,#1a3d5c 0%,#0f2840 100%)',
+   desc:'El único campo de 18 hoyos dentro de la ciudad. Perfecto para una escapada de semana sin salir de Capital: llegás en 15 minutos y jugás con vista al Río de la Plata.',
+   serv:['Alquiler de palos','Driving range','Carrito eléctrico','Bar']},
+  {id:4, name:'Las Praderas de Luján', loc:'Luján, Buenos Aires', zona:'Interior', hoyos:18, par:72, dist:65, rating:4.6, reviews:56, precio:14900, guest:35000, grad:'linear-gradient(135deg,#2a3d1a 0%,#1a2810 100%)',
+   desc:'Links de campo abierto con viento protagonista. La mejor relación precio-calidad de la red TuCaddie y un asado de hoyo 19 que ya es leyenda entre los usuarios.',
+   serv:['Carro incluido','Hospedaje','Restaurante de campo','Práctica']},
+  {id:5, name:'Ranelagh Golf Club', loc:'Berazategui, Buenos Aires', zona:'GBA Sur', hoyos:18, par:72, dist:38, rating:4.8, reviews:74, precio:16500, guest:40000, grad:'linear-gradient(135deg,#1f4d3a 0%,#123325 100%)',
+   desc:'Fundado en 1925, es el clásico del sur. Greens elevados de los de antes y bunkers profundos. Los martes y jueves libera más de 20 turnos para TuCaddie.',
+   serv:['Caddie opcional','Driving range','Proshop','Confitería']},
+  {id:6, name:'San Andrés Golf 9', loc:'San Martín, Buenos Aires', zona:'GBA Norte', hoyos:9, par:35, dist:22, rating:4.5, reviews:43, precio:9900, guest:22000, grad:'linear-gradient(135deg,#4d3d1f 0%,#332812 100%)',
+   desc:'Nueve hoyos ágiles para después del trabajo: salís 16:30 y terminás antes de que caiga el sol. La puerta de entrada perfecta para jugadores nuevos.',
+   serv:['Alquiler de palos','Clases','Putting green','Bar']},
+];
+
+const state = {
+  user:{name:'Mateo Rodríguez', initials:'MR', mat:'AAG 158.213', hcp:14.2, plan:'birdie', credits:2, planTotal:4, salidasMes:3},
+  zone:'Todas', holes:'Todos',
+  detCourse:1,
+  selDate:null, pending:null, useCredit:false, players:[],
+  bookings:[],
+  lastBooking:null,
+};
+
+const PLANS = {
+  payg:  {name:'Pay per use', price:0,     credits:0, tag:null},
+  birdie:{name:'Plan Birdie', price:59900, credits:4, tag:null},
+  eagle: {name:'Plan Eagle',  price:99900, credits:8, tag:'Más elegido'},
+};
+
+let POSTS = [
+  {id:1, user:'Lucas Garmendia', ini:'LG', bg:'#d4edda', fg:'#1a5c3a', courseId:1, when:'hace 2 h', score:79, par:72, holes:18,
+   caption:'¡Eagle en el 8! Primera vez que lo logro en ese campo. La vista desde el tee es increíble 🏌️',
+   likes:24, liked:false, grad:null,
+   strip:[[3,'birdie'],[5,''],[6,'bogey'],[4,''],[4,'birdie'],[3,''],[5,'bogey'],[2,'eagle'],[5,'']],
+   comments:[{u:'Sofía W.', t:'¡Tremendo! El 8 me debe una 😅'},{u:'Carlos M.', t:'Vamos Lucas 👏'}]},
+  {id:2, user:'Sofía Wainstein', ini:'SW', bg:'#fde8d0', fg:'#7a3b1a', courseId:2, when:'hace 18 h', score:41, par:36, holes:9,
+   caption:'Primera vez en CUBA, tremendo campo. El hoyo 2 es un sueño. ¡Ya quiero volver!',
+   likes:17, liked:false, grad:'linear-gradient(135deg,#3d2a1a 0%,#5c3d28 100%)',
+   strip:[[4,''],[3,'birdie'],[5,''],[5,'bogey'],[4,''],[5,'bogey'],[3,''],[4,'birdie'],[8,'']],
+   comments:[{u:'Lucas G.', t:'Lo reservé para el jueves por tu post 🙌'}]},
+  {id:3, user:'Carlos Méndez', ini:'CM', bg:'#dce8fd', fg:'#1a3a7a', courseId:5, when:'ayer', score:88, par:72, holes:18,
+   caption:'Martes de Ranelagh con TuCaddie: cancha impecable y ni un alma en el tee. Así da gusto.',
+   likes:11, liked:false, grad:'linear-gradient(135deg,#1f4d3a 0%,#123325 100%)',
+   strip:[[5,''],[4,''],[6,'bogey'],[4,'birdie'],[5,''],[6,'bogey'],[4,''],[5,''],[5,'']],
+   comments:[]},
+];
+
+const CHATS = [
+  {id:1, name:'Lucas Garmendia', ini:'LG', bg:'#d4edda', fg:'#1a5c3a', online:true, time:'hace 2 h', unread:2, status:'En línea · Handicap 11,4',
+   msgs:[
+     {type:'r', t:'¡Hola Mateo! ¿Vas el jueves a Nordelta?', h:'10:30'},
+     {type:'r', t:'Tenemos turno a las 9:00. Somos 3 hasta ahora, ¿te sumás?', h:'10:31'},
+     {type:'invite', course:1, label:'Nordelta Golf Club · Jue · 09:00 hs'},
+     {type:'s', t:'¡Dale! Me apunto. Confirmo en un rato.', h:'10:45'},
+     {type:'r', t:'Buenísimo. Pasame tu matrícula así te cargo en la reserva 🏌️', h:'10:46'},
+   ]},
+  {id:2, name:'Sofía Wainstein', ini:'SW', bg:'#fde8d0', fg:'#7a3b1a', online:false, time:'ayer', unread:0, status:'Últ. vez hoy 08:15 · Handicap 18,9',
+   msgs:[
+     {type:'r', t:'Che, qué buen campo CUBA, lo vi en tu feed', h:'19:02'},
+     {type:'s', t:'¡Es buenísimo! Andá un miércoles que está vacío y sale 60% más barato que de invitada', h:'19:10'},
+   ]},
+  {id:3, name:'Grupo Nordelta 🏌️', ini:'GN', bg:'#1a5c3a', fg:'#ffffff', online:false, time:'dom', unread:5, status:'Lucas, Ana, Carlos y vos',
+   msgs:[
+     {type:'r', t:'Ana: ¿Armamos algo para la semana que viene?', h:'18:20'},
+     {type:'r', t:'Lucas: Yo puedo jueves o viernes', h:'18:31'},
+     {type:'s', t:'Jueves me queda perfecto. Reservo yo por la app y les paso la invitación', h:'18:40'},
+   ]},
+  {id:4, name:'Ana Lastiri', ini:'AL', bg:'#fdd8e0', fg:'#7a1a2e', online:false, time:'dom', unread:0, status:'Últ. vez ayer · Handicap 22,0',
+   msgs:[
+     {type:'r', t:'¡Bienvenido al grupo Nordelta! 🏌️', h:'12:00'},
+   ]},
+];
+
+const HISTORY = [
+  {course:'Nordelta Golf Club', date:'5 Jun 2026', score:85, bg:'linear-gradient(135deg,#2d5a3d,#1a3d28)', holes:[[5,''],[4,'b'],[6,''],[6,'bg'],[4,'b'],[4,''],[5,''],[3,''],[5,'']]},
+  {course:'CUBA Golf Club', date:'28 May 2026', score:82, bg:'linear-gradient(135deg,#3d2a1a,#5c3d28)', holes:[[4,''],[3,'b'],[5,''],[5,''],[3,'e'],[4,''],[6,'bg'],[4,'b'],[5,'']]},
+  {course:'Lagos de Palermo GC', date:'19 May 2026', score:88, bg:'linear-gradient(135deg,#1a3d5c,#0f2840)', holes:[[5,''],[5,''],[7,'bg'],[4,''],[4,'b'],[5,''],[6,''],[4,''],[6,'bg']]},
+];
+
+/* ════════════════ HELPERS ════════════════ */
+const $ = id => document.getElementById(id);
+const courseById = id => COURSES.find(c=>c.id===id);
+
+function rng(seed){ return () => { seed=(seed*9301+49297)%233280; return seed/233280; }; }
+
+const DAYS = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'];
+const DAYS_L = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function buildDates(){
+  const out=[]; const today=new Date();
+  for(let i=0;i<8;i++){
+    const d=new Date(today); d.setDate(today.getDate()+i);
+    const dow=d.getDay();
+    out.push({
+      idx:i, day: i===0?'HOY':DAYS[dow], num:d.getDate(),
+      weekend: dow===0||dow===6,
+      label: (i===0?'Hoy':DAYS[dow].charAt(0)+DAYS[dow].slice(1).toLowerCase())+' '+d.getDate()+' '+MONTHS[d.getMonth()],
+      labelLong: DAYS_L[dow]+' '+d.getDate(),
+    });
+  }
+  return out;
+}
+const DATES = buildDates();
+
+function getSlots(courseId, dateIdx){
+  const c=courseById(courseId); const d=DATES[dateIdx];
+  const r=rng(courseId*31+dateIdx*7+11);
+  const slots=[];
+  if(d.weekend){
+    ['07:00','07:30'].forEach(t=>{
+      const spots=Math.floor(r()*3);
+      slots.push({time:t, spots, cart:true, price:Math.round(c.precio*1.45/100)*100, promo:false});
+    });
+  } else {
+    const startH = c.hoyos===9 ? 8 : 7; let h=startH, m=30;
+    const n = 7+Math.floor(r()*3);
+    for(let i=0;i<n;i++){
+      const spots=Math.floor(r()*5);
+      const cart=r()>0.45;
+      slots.push({time:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`, spots, cart,
+        price: cart?c.precio:Math.round((c.precio-2600)/100)*100, promo:true});
+      m+=15; if(m>=60){m=0;h++;}
+      if(i===3){h++;m=0;}
+    }
+  }
+  return slots;
+}
+
+function weekdaySlotsCount(courseId){
+  let n=0;
+  for(let i=0;i<8;i++){ if(!DATES[i].weekend) n+=getSlots(courseId,i).filter(s=>s.spots>0).length; }
+  return n;
+}
+
+/* ════════════════ NAV ════════════════ */
+const TABS = [
+  {id:'home',     label:'Inicio',   icon:'<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'},
+  {id:'canchas',  label:'Canchas',  icon:'<circle cx="12" cy="12" r="10"/><path d="M12 6v9"/><path d="M12 6l5 1.8L12 9.5z" fill="currentColor"/><ellipse cx="12" cy="16.5" rx="4.5" ry="1.8"/>'},
+  {id:'reservas', label:'Reservas', icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},
+  {id:'chat',     label:'Chat',     icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
+  {id:'perfil',   label:'Perfil',   icon:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>'},
+];
+
+function buildNavs(){
+  document.querySelectorAll('.navbar').forEach(nav=>{
+    const active=nav.dataset.tab;
+    nav.innerHTML = TABS.map(t=>`
+      <div class="nav-item ${t.id===active?'active':''}" onclick="showTab('${t.id}')">
+        <div class="nav-icon"><svg viewBox="0 0 24 24">${t.icon}</svg></div>
+        <div class="nav-label">${t.label}</div>
+        ${t.id==='reservas'&&state.bookings.length&&active!=='reservas'?'<div class="nav-dot"></div>':''}
+        ${t.id==='chat'&&active!=='chat'?'<div class="nav-dot"></div>':''}
+      </div>`).join('');
+  });
+}
+
+function showScreen(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('screen-'+name).classList.add('active');
+}
+function showTab(name){
+  if(name==='home') renderHome();
+  if(name==='canchas') renderCanchas();
+  if(name==='reservas') renderBookings();
+  if(name==='chat') renderChatList();
+  if(name==='perfil') renderPerfil();
+  if(name==='plan') renderPlans();
+  showScreen(name);
+}
+
+/* ════════════════ ONBOARDING ════════════════ */
+let obIdx=0;
+function nextOnboarding(){
+  if(obIdx>=2){ finishOnboarding(); return; }
+  $('ob-'+obIdx).classList.remove('active'); $('dot-'+obIdx).classList.remove('active');
+  obIdx++;
+  $('ob-'+obIdx).classList.add('active'); $('dot-'+obIdx).classList.add('active');
+  $('ob-next').textContent = obIdx===2 ? 'Empezar a jugar' : 'Siguiente';
+}
+function finishOnboarding(){ showTab('home'); }
+
+/* ════════════════ HOME ════════════════ */
+function renderHome(){
+  const h=new Date().getHours();
+  $('greeting').textContent = h<13?'Buenos días,':(h<20?'Buenas tardes,':'Buenas noches,');
+  $('stat-salidas').textContent = state.user.salidasMes;
+  $('stat-credits').innerHTML = state.user.credits+' <small>▸</small>';
+
+  // próxima reserva
+  const nb=state.bookings[0];
+  $('next-booking-slot').innerHTML = nb ? `
+    <div class="next-booking" onclick="showTab('reservas')">
+      <div class="nb-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="nb-info">
+        <div class="nb-label">Tu próxima salida</div>
+        <div class="nb-course">${nb.course}</div>
+        <div class="nb-when">${nb.dateLabel} · ${nb.time} hs · ${nb.players} jugador${nb.players>1?'es':''}</div>
+      </div>
+      <svg class="nb-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>` : '';
+
+  // quick cards (solo entre semana = corazón del modelo)
+  $('quick-row').innerHTML = COURSES.map(c=>{
+    const save=Math.round((1-c.precio/c.guest)*100);
+    return `<div class="quick-card" onclick="showDetalle(${c.id})">
+      <div class="quick-img" style="background:${c.grad}"><div class="quick-save">-${save}%</div></div>
+      <div class="quick-info">
+        <div class="quick-name">${c.name}</div>
+        <div class="quick-price">${fmt(c.precio)}<s>${fmt(c.guest)}</s></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  renderFeed();
+  buildNavs();
+}
+
+function renderFeed(){
+  $('feed').innerHTML = POSTS.map(p=>{
+    const c=courseById(p.courseId);
+    const diff=p.score-p.par;
+    return `<div class="post-card">
+      <div class="post-header">
+        <div class="post-avatar" style="background:${p.bg};color:${p.fg}">${p.ini}</div>
+        <div><div class="post-user">${p.user}</div><div class="post-meta">${c.name}</div></div>
+        <div class="post-time">${p.when}</div>
+      </div>
+      <div class="scorecard" style="background:${p.grad||'var(--green)'}">
+        <div class="sc-course">${c.name} · ${p.holes} hoyos</div>
+        <div class="sc-score-row">
+          <div class="sc-score">${p.score}</div>
+          <div class="sc-par">Par ${p.par}</div>
+          <div class="sc-badge">${diff>0?'+':''}${diff===0?'E':diff}</div>
+        </div>
+        <div class="sc-holes">${p.strip.map((s,i)=>`<div class="sc-hole ${s[1]}"><div class="sc-hole-n">${i+1}</div><div class="sc-hole-s">${s[0]}</div></div>`).join('')}</div>
+      </div>
+      ${p.caption?`<div class="post-caption"><span>${p.user}</span> ${p.caption}</div>`:''}
+      <div class="post-footer">
+        <div class="post-action ${p.liked?'liked':''}" onclick="toggleLike(${p.id})">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span>${p.likes}</span>
+        </div>
+        <div class="post-action" onclick="toggleComments(${p.id})">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>${p.comments.length}</span>
+        </div>
+        <div class="post-book" onclick="showDetalle(${c.id})">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Reservar acá
+        </div>
+      </div>
+      <div class="comments-box" id="comments-${p.id}">
+        <div id="comment-lines-${p.id}">${p.comments.map(cm=>`<div class="comment-line"><b>${cm.u}</b> ${cm.t}</div>`).join('')}</div>
+        <div class="comment-input-row">
+          <input class="comment-input" id="comment-in-${p.id}" placeholder="Agregá un comentario..." onkeydown="if(event.key==='Enter')addComment(${p.id})">
+          <button class="comment-send" onclick="addComment(${p.id})">Enviar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleLike(id){
+  const p=POSTS.find(x=>x.id===id);
+  p.liked=!p.liked; p.likes+=p.liked?1:-1;
+  renderFeed();
+}
+function toggleComments(id){ $('comments-'+id).classList.toggle('open'); }
+function addComment(id){
+  const inp=$('comment-in-'+id); const t=inp.value.trim(); if(!t) return;
+  const p=POSTS.find(x=>x.id===id);
+  p.comments.push({u:'Mateo R.', t});
+  renderFeed();
+  $('comments-'+id).classList.add('open');
+}
+
+/* ── publicar score ── */
+let postHoles=18;
+function openPostModal(){
+  $('post-course').innerHTML = COURSES.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  $('post-modal').classList.add('open');
+}
+function closePostModal(){ $('post-modal').classList.remove('open'); }
+function setHoles(n){
+  postHoles=n;
+  $('seg-18').classList.toggle('active',n===18);
+  $('seg-9').classList.toggle('active',n===9);
+}
+function publishScore(){
+  const cid=parseInt($('post-course').value);
+  const c=courseById(cid);
+  const score=parseInt($('post-score').value);
+  if(!score||score<18||score>160){ toast('⚠️ Ingresá un score válido'); return; }
+  const par=postHoles===18?72:36;
+  const caption=$('post-caption').value.trim();
+  // genera la tira de los primeros 9 hoyos coherente con el diferencial
+  const basePars=[4,4,3,5,4,4,3,5,4];
+  const diff9=Math.max(-4,Math.min(9,Math.round((score-par)*(9/postHoles))));
+  const r=rng(score*7+cid); const strip=basePars.map(p=>[p,'']);
+  let rem=diff9, guard=0;
+  while(rem!==0&&guard<60){
+    const i=Math.floor(r()*9); guard++;
+    if(rem>0&&strip[i][0]<basePars[i]+2){strip[i][0]++;rem--;}
+    else if(rem<0&&strip[i][0]>basePars[i]-2){strip[i][0]--;rem++;}
+  }
+  strip.forEach((s,i)=>{const d=s[0]-basePars[i]; s[1]=d<=-2?'eagle':d===-1?'birdie':d>=1?'bogey':'';});
+  POSTS.unshift({id:Date.now(), user:state.user.name, ini:state.user.initials, bg:'#c9a84c', fg:'#0f1f15',
+    courseId:cid, when:'ahora', score, par, holes:postHoles, caption, likes:0, liked:false, grad:c.grad, strip, comments:[]});
+  $('post-score').value=''; $('post-caption').value='';
+  closePostModal(); renderFeed(); toast('🏌️ ¡Tarjeta publicada en el feed!');
+}
+
+/* ════════════════ CANCHAS ════════════════ */
+function renderCanchas(){
+  const zones=['Todas','GBA Norte','GBA Sur','Capital','Interior'];
+  $('zone-chips').innerHTML = zones.map(z=>`<div class="chip ${state.zone===z?'active':''}" onclick="state.zone='${z}';renderCanchas()">${z}</div>`).join('');
+  const holes=['Todos','18 hoyos','9 hoyos'];
+  $('holes-chips').innerHTML = holes.map(h=>`<div class="chip ${state.holes===h?'active':''}" onclick="state.holes='${h}';renderCanchas()">${h}</div>`).join('');
+
+  const q=($('search-canchas').value||'').toLowerCase();
+  const list=COURSES.filter(c=>
+    (state.zone==='Todas'||c.zona===state.zone) &&
+    (state.holes==='Todos'||c.hoyos===parseInt(state.holes)) &&
+    (!q||c.name.toLowerCase().includes(q)||c.loc.toLowerCase().includes(q))
+  );
+  $('canchas-count').textContent = COURSES.length+' clubes adheridos · turnos liberados entre semana';
+
+  $('canchas-list').innerHTML = list.length ? list.map(c=>{
+    const n=weekdaySlotsCount(c.id);
+    const save=Math.round((1-c.precio/c.guest)*100);
+    return `<div class="cancha-card" onclick="showDetalle(${c.id})">
+      <div class="cancha-img" style="background:${c.grad}">
+        <div class="cancha-img-overlay"></div>
+        <div class="cancha-tag ${n<10?'few':''}">● ${n} turnos esta semana</div>
+        <div class="save-badge">-${save}% vs invitado</div>
+      </div>
+      <div class="cancha-info">
+        <div class="cancha-name">${c.name}</div>
+        <div class="cancha-loc"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${c.loc} · ${c.dist} km · ${c.hoyos} hoyos</div>
+        <div class="cancha-row">
+          <div>
+            <div class="cancha-price">${fmt(c.precio)}<s>${fmt(c.guest)}</s></div>
+            <div class="cancha-rating"><span class="star">★</span> ${c.rating} · ${c.reviews} reseñas</div>
+          </div>
+          <button class="cancha-btn" onclick="event.stopPropagation();showHorarios(${c.id})">Ver turnos</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty-state">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <div class="empty-state-t">No encontramos canchas</div>
+      <p>Probá con otra zona u otro término de búsqueda.</p>
+    </div>`;
+  buildNavs();
+}
+
+/* ════════════════ DETALLE ════════════════ */
+function showDetalle(id){
+  state.detCourse=id;
+  const c=courseById(id);
+  $('det-hero').style.background=c.grad;
+  $('det-name').textContent=c.name;
+  $('det-loc').textContent=c.loc+' · a '+c.dist+' km';
+  $('det-stats').innerHTML=`
+    <div class="det-stat"><div class="det-stat-v">${c.hoyos}</div><div class="det-stat-l">Hoyos</div></div>
+    <div class="det-stat"><div class="det-stat-v">Par ${c.par}</div><div class="det-stat-l">Recorrido</div></div>
+    <div class="det-stat"><div class="det-stat-v"><span class="star">★</span> ${c.rating}</div><div class="det-stat-l">${c.reviews} reseñas</div></div>
+    <div class="det-stat"><div class="det-stat-v">${weekdaySlotsCount(c.id)}</div><div class="det-stat-l">Turnos / sem</div></div>`;
+  $('det-desc').textContent=c.desc;
+  $('det-services').innerHTML=c.serv.map(s=>`<div class="service-pill">${s}</div>`).join('');
+  $('det-guest').textContent=fmt(c.guest);
+  $('det-price').textContent=fmt(c.precio);
+  $('det-save').textContent='-'+Math.round((1-c.precio/c.guest)*100)+'%';
+  buildNavs();
+  showScreen('detalle');
+}
+
+/* ════════════════ HORARIOS ════════════════ */
+function showHorarios(courseId){
+  state.detCourse=courseId;
+  if(state.selDate===null){
+    state.selDate = DATES.findIndex(d=>!d.weekend && d.idx>0);
+    if(state.selDate<0) state.selDate=1;
+  }
+  $('horarios-title').textContent=courseById(courseId).name;
+  renderDates(); renderSlots();
+  showScreen('horarios');
+}
+function renderDates(){
+  $('date-selector').innerHTML = DATES.map(d=>`
+    <div class="date-item ${state.selDate===d.idx?'active':''}" onclick="state.selDate=${d.idx};renderDates();renderSlots()">
+      <div class="date-day">${d.day}</div>
+      <div class="date-num">${d.num}</div>
+      ${!d.weekend?'<div class="date-promo"></div>':''}
+    </div>`).join('');
+}
+function renderSlots(){
+  const c=courseById(state.detCourse);
+  const d=DATES[state.selDate];
+  $('horarios-date-label').textContent=d.label;
+  $('week-banner-slot').innerHTML = d.weekend
+    ? `<div class="week-banner">⛳ Fin de semana: disponibilidad limitada y tarifa plena. <b>De lunes a viernes hay más turnos y mejores precios.</b></div>`
+    : `<div class="week-banner">🏷️ <b>Precio entre semana:</b> turnos liberados por el club exclusivamente para TuCaddie.</div>`;
+  const slots=getSlots(state.detCourse, state.selDate);
+  $('slots-list').innerHTML = slots.map(s=>`
+    <div class="tee-slot ${s.spots===0?'taken':''}" ${s.spots>0?`onclick="startReserva('${s.time}',${s.price},${s.spots},${s.cart})"`:''}>
+      <div class="tee-time">${s.time}</div>
+      <div class="tee-info">
+        <div class="tee-spots ${s.spots===0?'full':''}">${s.spots===0?'Completo':s.spots+' lugar'+(s.spots>1?'es':'')+' disponible'+(s.spots>1?'s':'')}</div>
+        <div class="tee-type">${c.hoyos} hoyos · ${s.cart?'Carro incluido':'Walk (sin carro)'}</div>
+      </div>
+      <div class="tee-price">${fmt(s.price)}${s.promo?'<small>entre semana</small>':''}</div>
+      <svg class="tee-arrow" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`).join('');
+}
+
+/* ════════════════ RESERVA ════════════════ */
+function startReserva(time, price, spots, cart){
+  const c=courseById(state.detCourse);
+  state.pending={courseId:c.id, time, price, spots, cart, dateIdx:state.selDate};
+  state.players=[{mat:state.user.mat, me:true}];
+  state.useCredit = state.user.credits>0;
+  $('res-cancha').textContent=c.name;
+  $('res-time').textContent=DATES[state.selDate].label+' · '+time+' hs · '+c.hoyos+' hoyos'+(cart?' · Carro incluido':'');
+  renderPlayers(); renderSummary();
+  showScreen('reserva');
+}
+function renderPlayers(){
+  const max=Math.min(4, state.pending.spots);
+  $('players-list').innerHTML = state.players.map((p,i)=>`
+    <div class="player-row">
+      <div class="player-num">${i+1}</div>
+      ${p.me
+        ? `<input class="player-input" value="${p.mat}" readonly><div class="player-badge">Vos</div>`
+        : `<input class="player-input" placeholder="Matrícula jugador ${i+1}" value="${p.mat}" oninput="state.players[${i}].mat=this.value">
+           <button class="player-remove" onclick="removePlayer(${i})">✕</button>`}
+    </div>`).join('');
+  $('add-player-btn').style.display = state.players.length<max ? 'flex':'none';
+}
+function addPlayer(){ state.players.push({mat:'', me:false}); renderPlayers(); renderSummary(); }
+function removePlayer(i){ state.players.splice(i,1); renderPlayers(); renderSummary(); }
+function toggleCredit(){
+  if(state.user.credits<1){ toast('No te quedan créditos este mes — mirá los planes'); return; }
+  state.useCredit=!state.useCredit; renderSummary();
+}
+function renderSummary(){
+  const p=state.pending; const n=state.players.length;
+  const subtotal=n*p.price;
+  const credit=state.useCredit?p.price:0;
+  const service=Math.round((subtotal-credit)*0.08);
+  const total=subtotal-credit+service;
+  $('credit-toggle').classList.toggle('on', state.useCredit);
+  $('ct-sub').textContent = state.user.credits>0
+    ? `Cubre tu green fee (${fmt(p.price)}) · Te quedan ${state.user.credits} de ${state.user.planTotal}`
+    : 'Sin créditos disponibles este mes';
+  $('reserva-summary').innerHTML=`
+    <div class="summary-row"><div class="summary-label">${n} jugador${n>1?'es':''} × ${fmt(p.price)}</div><div class="summary-value">${fmt(subtotal)}</div></div>
+    ${credit?`<div class="summary-row"><div class="summary-label">Crédito ${PLANS[state.user.plan].name}</div><div class="summary-value" style="color:var(--green)">− ${fmt(credit)}</div></div>`:''}
+    <div class="summary-row"><div class="summary-label">Servicio TuCaddie (8%)</div><div class="summary-value">${fmt(service)}</div></div>
+    <div class="summary-row"><div class="summary-label" style="font-weight:600;color:var(--text)">Total a pagar</div><div class="summary-total">${fmt(total)}</div></div>`;
+  state.pendingTotal=total;
+}
+function confirmBooking(){
+  const missing=state.players.some(p=>!p.me&&!p.mat.trim());
+  if(missing){ toast('⚠️ Completá la matrícula de todos los jugadores'); return; }
+  const p=state.pending; const c=courseById(p.courseId);
+  const code='TC-'+Array.from({length:4},()=>'ACDEFHJKLMNPRTUVWXY23456789'[Math.floor(Math.random()*27)]).join('');
+  const booking={code, course:c.name, courseId:c.id, dateLabel:DATES[p.dateIdx].label, time:p.time,
+    players:state.players.length, total:state.pendingTotal, grad:c.grad, usedCredit:state.useCredit};
+  state.bookings.unshift(booking);
+  state.lastBooking=booking;
+  if(state.useCredit) state.user.credits--;
+  // ticket
+  $('cf-course').textContent=c.name;
+  $('cf-when').textContent=booking.dateLabel+' · '+booking.time+' hs · '+c.hoyos+' hoyos';
+  $('cf-rows').innerHTML=`
+    <div class="ticket-row"><div class="l">Jugadores</div><div class="v">${booking.players}</div></div>
+    <div class="ticket-row"><div class="l">Titular</div><div class="v">${state.user.name} (${state.user.mat})</div></div>
+    ${booking.usedCredit?`<div class="ticket-row"><div class="l">Crédito aplicado</div><div class="v" style="color:var(--green2)">Sí · quedan ${state.user.credits}</div></div>`:''}
+    <div class="ticket-row"><div class="l">Total abonado</div><div class="v">${fmt(booking.total)}</div></div>`;
+  const r=rng(code.charCodeAt(3)*97+code.charCodeAt(4));
+  $('cf-qr').innerHTML=Array.from({length:81},()=>`<div class="qr-cell ${r()>0.5?'f':''}"></div>`).join('');
+  $('cf-code').textContent=code;
+  buildNavs();
+  showScreen('confirm');
+}
+function shareBookingToChat(){
+  const b=state.lastBooking;
+  const chat=CHATS[2]; // grupo
+  chat.msgs.push({type:'invite-mine', course:b.courseId, label:b.course+' · '+b.dateLabel+' · '+b.time+' hs'});
+  chat.msgs.push({type:'s', t:'¡Listo, reservé! Código '+b.code+'. ¿Quién se suma? 🏌️', h:nowHM()});
+  openChat(3);
+  toast('✉️ Invitación enviada al Grupo Nordelta');
+}
+
+/* ════════════════ MIS RESERVAS ════════════════ */
+const PAST=[
+  {course:'Nordelta Golf Club', dateLabel:'Vie 5 Jun', time:'08:30', players:3, code:'TC-K4P2', grad:'linear-gradient(135deg,#2d5a3d,#1a3d28)'},
+  {course:'CUBA Golf Club', dateLabel:'Jue 28 May', time:'09:15', players:2, code:'TC-W8M3', grad:'linear-gradient(135deg,#3d2a1a,#5c3d28)'},
+];
+function renderBookings(){
+  const up=state.bookings;
+  $('bookings-list').innerHTML =
+    `<div class="section-header" style="padding-top:10px"><div class="section-title">Próximas</div></div>` +
+    (up.length ? up.map((b,i)=>`
+      <div class="booking-card">
+        <div class="booking-top">
+          <div class="booking-icon" style="background:${b.grad}">⛳</div>
+          <div class="booking-info">
+            <div class="booking-course">${b.course}</div>
+            <div class="booking-when">${b.dateLabel} · ${b.time} hs · ${b.players} jugador${b.players>1?'es':''}</div>
+          </div>
+          <div class="booking-code">${b.code}</div>
+        </div>
+        <div class="booking-bottom">
+          <div class="booking-act" onclick="toast('📅 Agregado a tu calendario')">Calendario</div>
+          <div class="booking-act" onclick="shareBookingFromList(${i})">Invitar</div>
+          <div class="booking-act danger" onclick="cancelBooking(${i})">Cancelar</div>
+        </div>
+      </div>`).join('')
+    : `<div class="empty-state">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div class="empty-state-t">No tenés salidas reservadas</div>
+        <p>Explorá las canchas adheridas y reservá tu próximo turno entre semana a precio TuCaddie.</p>
+        <button class="cancha-btn" style="margin-top:14px" onclick="showTab('canchas')">Explorar canchas</button>
+      </div>`) +
+    `<div class="section-header"><div class="section-title">Jugadas</div></div>` +
+    PAST.map(b=>`
+      <div class="booking-card past-booking">
+        <div class="booking-top">
+          <div class="booking-icon" style="background:${b.grad}">⛳</div>
+          <div class="booking-info">
+            <div class="booking-course">${b.course}</div>
+            <div class="booking-when">${b.dateLabel} · ${b.time} hs · ${b.players} jugadores</div>
+          </div>
+          <div class="status-pill done">Jugada</div>
+        </div>
+      </div>`).join('');
+  buildNavs();
+}
+function shareBookingFromList(i){ state.lastBooking=state.bookings[i]; shareBookingToChat(); }
+function cancelBooking(i){
+  const b=state.bookings[i];
+  if(!confirm('¿Cancelar la reserva en '+b.course+' ('+b.dateLabel+' '+b.time+' hs)?\n\nCancelación gratuita hasta 24 hs antes.')) return;
+  if(b.usedCredit) state.user.credits++;
+  state.bookings.splice(i,1);
+  renderBookings();
+  toast('Reserva cancelada'+(b.usedCredit?' · crédito devuelto a tu plan':''));
+}
+
+/* ════════════════ CHAT ════════════════ */
+let currentChat=null;
+function renderChatList(){
+  $('chat-list').innerHTML = CHATS.map(ch=>{
+    const last=ch.msgs[ch.msgs.length-1];
+    const preview=last.type==='invite'||last.type==='invite-mine'?'📅 Invitación a salida':last.t;
+    return `<div class="chat-item" onclick="openChat(${ch.id})">
+      <div class="chat-av" style="background:${ch.bg};color:${ch.fg}">${ch.ini}${ch.online?'<div class="online-dot"></div>':''}</div>
+      <div class="chat-info"><div class="chat-name">${ch.name}</div><div class="chat-preview">${preview}</div></div>
+      <div class="chat-meta"><div class="chat-time">${ch.time}</div>${ch.unread?`<div class="chat-badge">${ch.unread}</div>`:''}</div>
+    </div>`;
+  }).join('');
+  buildNavs();
+}
+function openChat(id){
+  currentChat=CHATS.find(c=>c.id===id);
+  currentChat.unread=0;
+  $('cd-av').textContent=currentChat.ini;
+  $('cd-av').style.background=currentChat.bg;
+  $('cd-av').style.color=currentChat.fg;
+  $('cd-name').textContent=currentChat.name;
+  $('cd-status').textContent=currentChat.status;
+  renderMessages();
+  showScreen('chatdetail');
+}
+function renderMessages(){
+  const area=$('messages-area');
+  area.innerHTML=currentChat.msgs.map(m=>{
+    if(m.type==='invite'||m.type==='invite-mine') return `
+      <div class="msg-invite ${m.type==='invite-mine'?'mine':''}" onclick="showHorarios(${m.course})">
+        <div class="msg-invite-label">📅 Invitación a salida</div>
+        <div class="msg-invite-content">${m.label}</div>
+        <div class="msg-invite-cta">Ver turnos en la app →</div>
+      </div>`;
+    return `<div class="msg ${m.type==='s'?'sent':'received'}">${m.t}<div class="msg-time">${m.h}</div></div>`;
+  }).join('');
+  area.scrollTop=area.scrollHeight;
+}
+function nowHM(){ const d=new Date(); return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); }
+function sendMessage(){
+  const inp=$('chat-msg-input'); const t=inp.value.trim(); if(!t||!currentChat) return;
+  currentChat.msgs.push({type:'s', t, h:nowHM()});
+  inp.value=''; renderMessages();
+  if(currentChat.id===1){
+    setTimeout(()=>{ currentChat.msgs.push({type:'r', t:'👍 ¡Dale, nos vemos en el tee!', h:nowHM()}); if($('screen-chatdetail').classList.contains('active')) renderMessages(); }, 1400);
+  }
+}
+
+/* ════════════════ PERFIL & PLAN ════════════════ */
+function renderPerfil(){
+  const plan=PLANS[state.user.plan];
+  const pct=state.user.planTotal?Math.round(state.user.credits/state.user.planTotal*100):0;
+  $('plan-card').innerHTML=`
+    <div class="plan-row">
+      <div><div class="plan-name">⭐ ${plan.name}</div><div class="plan-sub">${plan.credits} salidas incluidas · Renueva el 1 Jul</div></div>
+      <div class="plan-credits"><div class="plan-credits-v">${state.user.credits}/${state.user.planTotal}</div><div class="plan-credits-l">créditos</div></div>
+    </div>
+    <div class="plan-bar"><div class="plan-bar-fill" style="width:${pct}%"></div></div>
+    <div class="plan-manage">Administrar plan →</div>`;
+  $('history-list').innerHTML=HISTORY.map(h=>`
+    <div class="history-item">
+      <div class="history-top"><div class="history-course">${h.course}</div><div class="history-date">${h.date}</div></div>
+      <div class="history-score-row" style="background:${h.bg}">
+        <div><div class="h-score-lbl">Score</div><div class="h-score">${h.score}</div></div>
+        <div class="h-holes">${h.holes.map(x=>`<div class="h-hole ${x[1]}">${x[0]}</div>`).join('')}</div>
+      </div>
+    </div>`).join('');
+  buildNavs();
+}
+
+function renderPlans(){
+  const avg=18500;
+  const cur=state.user.plan;
+  const mk=(key,desc,perks,featured)=>{
+    const p=PLANS[key];
+    const isCur=cur===key;
+    return `<div class="plan-option ${isCur?'current':''} ${featured&&!isCur?'featured':''}">
+      ${isCur?'<div class="po-tag cur">Tu plan</div>':(p.tag?`<div class="po-tag">${p.tag}</div>`:'')}
+      <div class="po-head"><div class="po-name">${p.name}</div>
+        <div class="po-price">${p.price?fmt(p.price)+'<small>/mes</small>':'Gratis'}</div></div>
+      <div class="po-desc">${desc}</div>
+      <div class="po-perks">${perks.map(x=>`<div class="po-perk"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>${x}</div>`).join('')}</div>
+      ${isCur
+        ? `<button class="po-cta disabled">Plan activo</button>`
+        : `<button class="po-cta ${featured?'gold':''}" onclick="switchPlan('${key}')">${p.price?'Cambiar a este plan':'Pasar a pay per use'}</button>`}
+    </div>`;
+  };
+  $('plans-list').innerHTML =
+    mk('payg','Registrate gratis y pagá cada salida individual. Sin compromiso, ideal para probar la app.',
+      ['Acceso a toda la red de canchas','Precio TuCaddie entre semana','Feed, chat y estadísticas'],false) +
+    mk('birdie',`4 salidas mensuales incluidas. Pagás ${fmt(PLANS.birdie.price)} en vez de ~${fmt(avg*4)} sueltas: <b>ahorrás ~19%</b>.`,
+      ['4 créditos de green fee por mes','Reserva prioritaria 48 hs antes','Cancelación flexible hasta 12 hs'],false) +
+    mk('eagle',`8 salidas mensuales incluidas. Pagás ${fmt(PLANS.eagle.price)} en vez de ~${fmt(avg*8)} sueltas: <b>ahorrás ~32%</b>.`,
+      ['8 créditos de green fee por mes','1 invitado sin cargo por mes','Reserva prioritaria 72 hs antes','Acceso a torneos TuCaddie'],true);
+  buildNavs();
+}
+function switchPlan(key){
+  state.user.plan=key;
+  state.user.planTotal=PLANS[key].credits;
+  state.user.credits=PLANS[key].credits;
+  renderPlans();
+  toast(key==='payg'?'Pasaste a pay per use':'🎉 ¡Bienvenido al '+PLANS[key].name+'! Créditos renovados');
+}
+
+/* ════════════════ TOAST & CLOCK ════════════════ */
+let toastTimer;
+function toast(msg){
+  const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function tickClock(){
+  const d=new Date();
+  $('clock').textContent=d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+}
+tickClock(); setInterval(tickClock, 30000);
+
+/* init */
+buildNavs();
+</script>
+</body>
+</html>
